@@ -1,0 +1,36 @@
+name: Daily Tracker Check
+
+on:
+  schedule:
+    # 每天 00:00 和 12:00 UTC（北京时间 08:00 和 20:00）
+    - cron: '0 0,12 * * *'
+  workflow_dispatch:   # 允许手动触发
+
+jobs:
+  run-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests bencode.py
+
+      - name: Run tracker query script
+        run: python init.py   # 替换为您的脚本文件名
+
+      - name: Commit and push results (optional)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seeders_results.txt
+          git diff --staged --quiet || git commit -m "Auto-update seeders results [$(date +'%Y-%m-%d %H:%M')]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
